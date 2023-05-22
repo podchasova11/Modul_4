@@ -177,4 +177,150 @@ class TestPages:
   ```
   Готово, как итог у нас очень сильно сократился код и у нас все так же 3 теста.
   
+	`Немного магии:` Возьмем тот же пример, но используем магию вне хогвартса! Для разнообразия я добавлю пример с библиотекой `requests` для проверки доступности страницы путем запроса к ней.
+
+1. Я вынесу все ссылки в `.txt файл`
+2. Я буду построчно считывать ссылки из файла и подставлять в качестве значения
+3. Использую метод `strip()` чтобы очистить ссылки от пробелов и прочего (на всякий случай)
+	Пример с `Selenium`
   
+	```
+	
+	import pytest
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+class TestPages:
+
+    def setup(self):
+        self.service = Service(ChromeDriverManager().install())
+        self.driver = webdriver.Chrome(service=self.service)
+
+    @pytest.mark.parametrize("domain", open("domains.txt").readlines())   
+    def test_open_page(self, domain): # Прокидываем URL в тест
+         self.driver.get(f{domain.strip()})
+         assert self.driver.current_url == domain, "Ошибка"
+
+    def teardown(self):
+        self.driver.quit()
+	
+
+	
+	```
+	
+	Пример с `Requests`
+	
+	```
+	
+	import pytest
+import requests
+
+class TestPages:
+
+    @pytest.mark.parametrize("domain", open("domains.txt").readlines())
+    def test_domain(self, domain):
+        url = f"{domain.strip()}"
+        response = requests.get(url)
+        assert response.status_code == 200
+	
+	```
+	
+	Вот еще один простой пример, тут мы загружаем разные файлы в окно загрузки:
+	
+	
+	```
+	
+	import pytest
+import os
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+class TestPages:
+
+    def setup(self):
+        self.service = Service(ChromeDriverManager().install())
+        self.driver = webdriver.Chrome(service=self.service)
+
+    @pytest.mark.parametrize(
+    "path_to_file",
+      [
+        (f"{os.getcwd()}/uploads/document.doc"),
+        (f"{os.getcwd()}/uploads/image.jpg"),
+        (f"{os.getcwd()}/uploads/music.mp3"),
+      ]
+    )
+    def test_file_upload(self, path_to_file):
+        self.driver.get("http://the-internet.herokuapp.com/upload")
+        self.driver.find_element("xpath", "//input[@type='file']").send_keys(path_to_file)
+        time.sleep(2)
+
+    def teardown(self):
+        self.driver.quit()
+	
+	```
+	
+	## Несколько параметров
+	
+	Что если параметров больше, чем 1? В таком случае ничего сложного, все по аналогии, но с упаковкой значений в кортежи (вспоминаем табличку изученную в начале темы).
+	
+```
+	
+	import pytest
+import requests
+
+class TestPages:
+
+    @pytest.mark.parametrize(
+      "name, age", [ # Параметры
+          ("Ivan", 23), # Значения для первого теста (name, age)
+          ("Anna", 32), # Значения для второго теста (name, age)
+          ("Max", 17)  # Значения для третьего теста (name, age)
+        ]
+    )
+    def test_print_people(self, name, age):
+        print(name, age)
+```
+	
+	В конечном итоге мы увидем успешное выполнение трех тестов с разными значениями)
+	
+	В примере ниже я буду проверять не только domain, но и title страницы, соответственно, я буду передавать их в качестве значений параметров:
+```
+	
+	
+import pytest
+import requests
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+class TestPages:
+
+    def setup(self):
+        self.service = Service(ChromeDriverManager().install())
+        self.driver = webdriver.Chrome(service=self.service)
+
+    @pytest.mark.parametrize(
+        "domain, title",[
+	    ("https://demoqa.com/login", "ToolsQA"), # значения domain и title для первого теста
+            ("https://wikipedia.ru", "Wikipedia"), # значения domain и title для второго теста
+            ("https://yandex.ru", "Yandex") # значения domain и title для третьего теста
+      ]
+    )
+    def test_open_page(self, domain, title): # Прокидываем domain и title в тест
+        self.driver.get(domain)
+        assert self.driver.current_url == domain, "Ошибка"
+        assert self.driver.title == title, "Ошибка"
+
+    def teardown(self):
+        self.driver.quit()	
+	
+```
+	
+	Отлично, все так же хорошо работает)
+	
+</details>	
